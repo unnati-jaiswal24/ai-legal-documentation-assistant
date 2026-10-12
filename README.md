@@ -2,7 +2,6 @@
 
 Draft v0.1  
 Status: Planning  
-Team size: 5
 
 ## Overview
 
