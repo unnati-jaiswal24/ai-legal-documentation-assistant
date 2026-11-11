@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
+  Bot,
   FilePlus2,
   Files,
   LayoutDashboard,
@@ -8,18 +9,25 @@ import {
   Menu,
   Moon,
   Scale,
+  Settings,
+  ShieldCheck,
   Sun,
+  FileStack,
   UserRound,
   X,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 
 const navigation = [
-  { to: '/dashboard', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/drafts', label: 'All drafts', icon: Files },
-  { to: '/drafts/new', label: 'New agreement', icon: FilePlus2 },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/assistant', label: 'AI Assistant', icon: Bot },
+  { to: '/documents', label: 'My Documents', icon: Files },
+  { to: '/documents/new', label: 'Create Document', icon: FilePlus2 },
+  { to: '/templates', label: 'Templates', icon: FileStack },
+  { to: '/legal-review', label: 'Legal Review', icon: ShieldCheck },
   { to: '/consultations', label: 'Consultations', icon: Scale },
   { to: '/profile', label: 'Profile', icon: UserRound },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -74,11 +82,17 @@ export default function Sidebar() {
               end={end}
               onClick={closeMenu}
               className={({ isActive }) => {
-                const active = to === '/drafts'
-                  ? pathname === '/drafts' || (pathname.startsWith('/drafts/') && pathname !== '/drafts/new')
-                  : to === '/drafts/new'
-                    ? pathname === '/drafts/new'
-                    : isActive;
+                let active = isActive;
+                if (to === '/documents') {
+                  active = pathname === '/documents'
+                    || (pathname.startsWith('/documents/') && pathname !== '/documents/new')
+                    || pathname === '/drafts'
+                    || (pathname.startsWith('/drafts/') && pathname !== '/drafts/new');
+                } else if (to === '/documents/new') {
+                  active = pathname === '/documents/new' || pathname === '/drafts/new';
+                } else if (['/assistant', '/templates', '/legal-review'].includes(to)) {
+                  active = pathname === to;
+                }
                 return `flex min-h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#55775d] ${
                 active
                   ? 'bg-[#eaf0e8] text-[#31583b] dark:bg-[#29382b] dark:text-[#c0d3bd]'

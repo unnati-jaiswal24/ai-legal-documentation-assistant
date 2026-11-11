@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, FileText } from 'lucide-react';
-import { createDraft, templates } from '../api/drafts';
+import { api } from '../api/client';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
@@ -34,9 +34,10 @@ function TemplateCard({ template, onCreate, disabled }) {
 
 export default function NewDraft() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [creatingId, setCreatingId] = useState(null);
   const [createError, setCreateError] = useState('');
-  const loadTemplates = useCallback(() => templates().then(unwrapTemplates), []);
+  const loadTemplates = useCallback(() => api.templates().then(unwrapTemplates), []);
   const { data: templatesList, loading, error, reload } = useAsyncData(loadTemplates);
   const activeTemplates = (templatesList || []).filter((template) => template.isActive ?? template.is_active);
 
@@ -44,9 +45,10 @@ export default function NewDraft() {
     setCreatingId(templateId);
     setCreateError('');
     try {
-      const response = await createDraft(templateId);
+      const response = await api.createDraft({ templateId });
       const draft = response.draft || response;
-      navigate(`/drafts/${draft.id}/fill`);
+      const documentPath = pathname.startsWith('/drafts') ? '/drafts' : '/documents';
+      navigate(`${documentPath}/${draft.id}/${documentPath === '/drafts' ? 'fill' : 'questions'}`);
     } catch (requestError) {
       setCreateError(requestError.message || 'Unable to start a draft. Please try again.');
     } finally {
@@ -57,9 +59,9 @@ export default function NewDraft() {
   return (
     <div>
       <PageHeader
-        eyebrow="New agreement"
+        eyebrow={pathname === '/templates' ? 'Templates' : 'New agreement'}
         title="Start with a template."
-        description="Choose an active template to create a draft. The template’s fields and clauses will guide the next steps."
+        description="Choose an active template returned by the service to create a draft. The template’s fields and clauses will guide the next steps."
       />
       {createError && <div className="mb-5"><ErrorState message={createError} /></div>}
       {loading ? <LoadingState label="Loading available templates…" />
