@@ -1,0 +1,2 @@
+import{call,withMock}from'./client';import{mockExperts,mockState}from'./mock';
+export const experts=()=>withMock(()=>call('/experts'),()=>mockExperts);export const createConsultation=(data)=>withMock(()=>call('/consultations',{method:'POST',body:data}),()=>{const c={id:crypto.randomUUID(),...data,status:'requested',expert:mockExperts.find(e=>e.id===data.expertId)};mockState.consultations.unshift(c);return c});export const consultations=()=>withMock(()=>call('/consultations'),()=>mockState.consultations);

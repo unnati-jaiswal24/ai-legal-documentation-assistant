@@ -1,18 +1,16 @@
-import React from 'react';
-
 export default function SectionHeading({ title, badge, description, centered = true }) {
   return (
-    <div className={`mb-16 ${centered ? 'text-center' : ''}`}>
+    <div className={`mx-auto mb-12 max-w-2xl ${centered ? 'text-center' : ''} sm:mb-14`}>
       {badge && (
-        <span className="inline-block px-4 py-1.5 mb-4 text-xs font-bold uppercase tracking-widest text-brand-indigo bg-brand-indigo/10 rounded-full dark:bg-brand-indigo/20 dark:text-brand-blue">
+        <span className="inline-flex rounded-full border border-[#e1e4dc] bg-white/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#607361] dark:border-[#39443a] dark:bg-[#1b231c] dark:text-[#b2c8b2]">
           {badge}
         </span>
       )}
-      <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+      <h2 className="mt-4 font-serif text-3xl leading-tight tracking-[-0.035em] text-[#29332a] dark:text-[#e8ece6] sm:text-4xl md:text-[2.75rem]">
         {title}
       </h2>
       {description && (
-        <p className="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-[#747c73] dark:text-[#adb6ab] sm:text-base sm:leading-7">
           {description}
         </p>
       )}

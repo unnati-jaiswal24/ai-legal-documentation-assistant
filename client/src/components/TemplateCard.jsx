@@ -1,24 +1,24 @@
-import React from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowUpRight, FileText } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 
-export default function TemplateCard({ emoji, title, tag, description, category }) {
+export default function TemplateCard({ template }) {
+  const reduceMotion = useReducedMotion();
   return (
-    <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex flex-col justify-between card-hover">
-      <div>
-        <div className="flex justify-between items-start mb-4">
-          <span className="text-4xl p-3 bg-slate-100 dark:bg-slate-800 rounded-2xl inline-block">{emoji}</span>
-          <span className="text-xs font-bold px-3 py-1 bg-brand-indigo/10 text-brand-indigo dark:text-brand-blue rounded-full">
-            {tag}
-          </span>
-        </div>
-        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{title}</h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6">{description}</p>
+    <motion.article
+      whileHover={reduceMotion ? undefined : { y: -5, rotate: 0.35, transition: { duration: 0.22, ease: 'easeOut' } }}
+      className="surface-card card-hover flex h-full flex-col p-5 hover:border-[#cbd7c9] sm:p-6"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff3ed] text-[#58765b] dark:bg-[#29352b] dark:text-[#b4c8b1]"><FileText size={18} /></span>
+        <span className="text-[9px] font-medium text-[#858c82] dark:text-[#9ca69c]">v{template.version || '—'}</span>
       </div>
-
-      <button className="w-full py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-200 hover:bg-brand-indigo hover:text-white hover:border-brand-indigo transition-all flex items-center justify-center gap-2 group text-sm">
-        Use Template
-        <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-      </button>
-    </div>
+      <h3 className="mt-5 text-sm font-semibold text-[#354136] dark:text-[#e0e6df]">{template.title}</h3>
+      {template.description && <p className="mt-2 text-xs leading-5 text-[#747c73] dark:text-[#adb6ab]">{template.description}</p>}
+      {template.documentType?.name && <p className="mt-3 text-[10px] text-[#858c82] dark:text-[#9ca69c]">{template.documentType.name}</p>}
+      <Link to="/drafts/new" className="mt-auto inline-flex min-h-10 items-center gap-1.5 pt-4 text-xs font-semibold text-[#55775d] hover:underline focus-visible:rounded dark:text-[#a9c5a9]">
+        Start a draft <ArrowUpRight size={14} />
+      </Link>
+    </motion.article>
   );
 }

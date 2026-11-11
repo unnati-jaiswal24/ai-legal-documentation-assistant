@@ -1,108 +1,96 @@
-import React from 'react';
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Scale, 
-  FileText, 
-  Plus, 
-  Search, 
-  Folder, 
-  Clock, 
-  User, 
-  Settings 
-} from 'lucide-react';
+import { ArrowRight, FilePlus2, Files, FileText } from 'lucide-react';
+import { drafts as fetchDrafts } from '../api/drafts';
+import Button from '../components/Button';
+import Card from '../components/Card';
+import PageHeader from '../components/PageHeader';
+import StatusBadge from '../components/StatusBadge';
+import { EmptyState, ErrorState, LoadingState } from '../components/StatePanel';
+import useAsyncData from '../hooks/useAsyncData';
+
+function unwrapDrafts(result) {
+  return Array.isArray(result) ? result : result?.drafts || [];
+}
+
+function DraftRow({ draft }) {
+  const title = draft.template?.title || draft.title || 'Freelance service agreement';
+  return (
+    <Link
+      to={`/drafts/${draft.id}/fill`}
+      className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-[#f8f9f6] dark:hover:bg-[#202820] sm:px-6"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff3ed] text-[#58765b] dark:bg-[#29352b] dark:text-[#b4c8b1]">
+        <FileText size={17} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-semibold text-[#354136] dark:text-[#e0e6df]">{title}</span>
+        <span className="mt-1 block truncate text-[10px] text-[#858c82] dark:text-[#9ca69c]">Draft ID · {draft.id}</span>
+      </span>
+      <StatusBadge status={draft.status} />
+      <ArrowRight size={14} className="hidden text-[#9aa197] sm:block" />
+    </Link>
+  );
+}
 
 export default function Dashboard() {
+  const loadDrafts = useCallback(() => fetchDrafts().then(unwrapDrafts), []);
+  const { data: drafts, loading, error, reload } = useAsyncData(loadDrafts);
+  const items = drafts || [];
+  const inProgressCount = items.filter((draft) => draft.status === 'in_progress').length;
+  const completedCount = items.filter((draft) => ['generated', 'exported'].includes(draft.status)).length;
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex">
-      {/* Sidebar Navigation */}
-      <aside className="w-64 bg-white border-r border-slate-200 p-6 flex flex-col justify-between hidden md:flex">
-        <div>
-          <Link to="/" className="flex items-center gap-2.5 mb-8">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-              <Scale className="h-4 w-4" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">SaralDocs</span>
-          </Link>
+    <div>
+      <PageHeader
+        eyebrow="Your workspace"
+        title="Good to have you back."
+        description="Keep your freelance agreements moving, one clear step at a time."
+        actions={<Button as={Link} to="/drafts/new"><FilePlus2 size={15} /> New agreement</Button>}
+      />
 
-          <nav className="space-y-1">
-            <a href="#" className="flex items-center gap-3 px-3 py-2.5 bg-blue-50 text-blue-700 font-semibold rounded-xl text-sm">
-              <FileText className="h-4 w-4" /> Recent Drafts
-            </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium">
-              <Folder className="h-4 w-4" /> My Templates
-            </a>
-            <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium">
-              <Clock className="h-4 w-4" /> Audit History
-            </a>
-          </nav>
-        </div>
+      <section aria-label="Draft summary" className="mb-7 grid gap-3 sm:grid-cols-3">
+        {[
+          { label: 'All drafts', value: loading ? '—' : items.length, icon: Files },
+          { label: 'In progress', value: loading ? '—' : inProgressCount, icon: FileText },
+          { label: 'Ready to share', value: loading ? '—' : completedCount, icon: ArrowRight },
+        ].map(({ label, value, icon: Icon }) => (
+          <Card key={label} className="flex items-center gap-4 p-5">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff3ed] text-[#58765b] dark:bg-[#29352b] dark:text-[#b4c8b1]"><Icon size={17} /></span>
+            <span>
+              <span className="block text-[10px] font-medium text-[#838b81] dark:text-[#9ca69c]">{label}</span>
+              <span className="mt-1 block text-2xl font-medium tracking-tight text-[#354136] dark:text-[#e0e6df]">{value}</span>
+            </span>
+          </Card>
+        ))}
+      </section>
 
-        <div className="border-t border-slate-200 pt-4 space-y-1">
-          <a href="#" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium">
-            <Settings className="h-4 w-4" /> Settings
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium">
-            <User className="h-4 w-4" /> Profile
-          </a>
-        </div>
-      </aside>
-
-      {/* Main Workspace Content */}
-      <main className="flex-1 p-8">
-        {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between gap-4 border-b border-[#e9e9e2] px-5 py-4 dark:border-[#303a31] sm:px-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Your Workstation</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage and draft legal documents with AI verification.</p>
+            <h2 className="text-sm font-semibold text-[#354136] dark:text-[#e0e6df]">Recent drafts</h2>
+            <p className="mt-1 text-[10px] text-[#858c82] dark:text-[#9ca69c]">Your latest agreement work.</p>
           </div>
-
-          <button className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm shadow-md transition-all">
-            <Plus className="h-4 w-4" /> New Document
-          </button>
+          <Link to="/drafts" className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#55775d] hover:underline dark:text-[#a9c5a9]">
+            View all <ArrowRight size={13} />
+          </Link>
         </div>
-
-        {/* Quick Search */}
-        <div className="relative mb-8 max-w-xl">
-          <Search className="h-4 w-4 text-slate-400 absolute left-4 top-3.5" />
-          <input 
-            type="text" 
-            placeholder="Search documents, templates, or clauses..." 
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
-          />
-        </div>
-
-        {/* Recent Files Table Grid */}
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-            <h2 className="font-bold text-slate-900">Recent Agreements</h2>
-            <span className="text-xs text-slate-500 font-medium">3 active documents</span>
-          </div>
-
-          <div className="divide-y divide-slate-100">
-            {[
-              { title: 'Freelance Service Agreement', date: 'Edited 2 hours ago', status: 'Drafting' },
-              { title: 'Non-Disclosure Agreement (NDA)', date: 'Edited yesterday', status: 'Verified' },
-              { title: 'Residential Rent Agreement', date: 'Edited 3 days ago', status: 'Completed' },
-            ].map((doc, i) => (
-              <div key={i} className="p-4 px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">{doc.title}</h3>
-                    <p className="text-xs text-slate-500">{doc.date}</p>
-                  </div>
-                </div>
-
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700">
-                  {doc.status}
-                </span>
+        {loading ? <div className="p-4"><LoadingState label="Loading your drafts…" /></div>
+          : error ? <div className="p-4"><ErrorState message={error} onRetry={reload} /></div>
+            : !items.length ? (
+              <div className="p-4">
+                <EmptyState
+                  title="Your workspace is ready."
+                  description="Start with a reviewed template to create your first freelance agreement."
+                  action={<Button as={Link} to="/drafts/new"><FilePlus2 size={15} /> Choose a template</Button>}
+                />
               </div>
-            ))}
-          </div>
-        </div>
-      </main>
+            ) : (
+              <div className="divide-y divide-[#ecece6] dark:divide-[#303a31]">
+                {items.slice(0, 5).map((draft) => <DraftRow key={draft.id} draft={draft} />)}
+              </div>
+            )}
+      </Card>
     </div>
   );
 }

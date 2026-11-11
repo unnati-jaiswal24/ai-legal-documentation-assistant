@@ -1,22 +1,11 @@
-import React from 'react';
-
-export default function FeatureCard({ icon: Icon, emoji, title, description, gradient }) {
+export default function FeatureCard({ icon: Icon, title, description }) {
   return (
-    <div className={`p-8 rounded-3xl bg-gradient-to-br ${gradient} text-slate-900 shadow-sm border border-slate-100 dark:border-slate-800/40 card-hover relative overflow-hidden group`}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="w-14 h-14 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-center shadow-md">
-          <Icon className="w-7 h-7 text-brand-indigo dark:text-brand-blue" />
-        </div>
-        <span className="text-3xl transform group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300">
-          {emoji}
-        </span>
-      </div>
-      <h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-white">
-        {title}
-      </h3>
-      <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed font-medium">
-        {description}
-      </p>
-    </div>
+    <article className="group h-full rounded-2xl border border-[#e1e3da] bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[#cbd7c9] hover:shadow-[0_20px_48px_-34px_rgba(41,63,43,0.4)] dark:border-[#303a31] dark:bg-[#1b231c] dark:hover:border-[#4a5b4b] sm:p-8">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1f4ef] text-[#527257] transition-colors group-hover:bg-[#e8f0e7] dark:bg-[#283329] dark:text-[#b2d0b6] dark:group-hover:bg-[#344a37]">
+        <Icon size={20} strokeWidth={1.7} />
+      </span>
+      <h3 className="mt-6 text-base font-semibold tracking-tight text-[#29332a] dark:text-[#e8ece6]">{title}</h3>
+      <p className="mt-2 max-w-md text-sm leading-6 text-[#747c73] dark:text-[#adb6ab]">{description}</p>
+    </article>
   );
 }

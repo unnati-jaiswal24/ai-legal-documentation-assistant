@@ -1,53 +1,71 @@
-import React from 'react';
-import { Scale, Github, Twitter, Linkedin } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { ArrowUpRight, Scale } from 'lucide-react';
+
+const footerLinks = [
+  ['#demo', 'Product preview'],
+  ['#templates', 'Templates'],
+  ['#how-it-works', 'How it works'],
+  ['#features', 'Features'],
+  ['#faq', 'FAQs'],
+];
+const currentYear = new Date().getFullYear();
 
 export default function Footer() {
+  const { pathname } = useLocation();
+  const sectionHref = (href) => pathname === '/' ? href : `/${href}`;
+
   return (
-    <footer className="bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 py-12">
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-8 mb-12">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-brand-indigo flex items-center justify-center text-white">
-              <Scale className="w-4 h-4" />
-            </div>
-            <span className="text-xl font-black text-slate-900 dark:text-white">saral<span className="text-brand-indigo">DOCS</span></span>
+    <footer className="border-t border-[#e7e7df] bg-[#f6f5f0] px-5 py-10 dark:border-[#303a31] dark:bg-[#141a15] sm:px-8 sm:py-12">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-8 sm:grid-cols-[1.4fr_0.7fr_0.9fr] sm:gap-10">
+          <div>
+            <Link to="/" className="inline-flex items-center gap-2.5 text-[#29332a] dark:text-[#e8ece6]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#31583b] text-white dark:bg-[#779779] dark:text-[#101a12]">
+                <Scale size={16} strokeWidth={1.8} />
+              </span>
+              <span className="text-sm font-semibold tracking-tight">SaralDocs</span>
+            </Link>
+            <p className="mt-4 max-w-sm text-xs leading-5 text-[#777f75] dark:text-[#aab3a9]">
+              A clearer way to prepare freelance service agreements, with you in control of every detail.
+            </p>
           </div>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Simplifying legal paperwork for India's 1.4B individuals & small businesses. Built for Ministry of Law & Justice Hackathon 🇮🇳
+
+          <div>
+            <h2 className="text-xs font-semibold text-[#29332a] dark:text-[#e8ece6]">Explore</h2>
+            <ul className="mt-3 space-y-2.5">
+              {footerLinks.map(([href, label]) => (
+                <li key={href}>
+                  <a href={sectionHref(href)} className="text-xs text-[#777f75] transition-colors hover:text-[#31583b] focus-visible:outline-2 focus-visible:outline-[#55775d] dark:text-[#aab3a9] dark:hover:text-[#c6dbc4]">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h2 className="text-xs font-semibold text-[#29332a] dark:text-[#e8ece6]">Your next step</h2>
+            <ul className="mt-3 space-y-2.5">
+              <li>
+                <Link to="/login" className="text-xs text-[#777f75] transition-colors hover:text-[#31583b] focus-visible:outline-2 focus-visible:outline-[#55775d] dark:text-[#aab3a9] dark:hover:text-[#c6dbc4]">
+                  Sign in
+                </Link>
+              </li>
+              <li>
+                <Link to="/limitations" className="inline-flex items-center gap-1 text-xs text-[#777f75] transition-colors hover:text-[#31583b] focus-visible:outline-2 focus-visible:outline-[#55775d] dark:text-[#aab3a9] dark:hover:text-[#c6dbc4]">
+                  Legal limitations <ArrowUpRight size={12} />
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-9 flex flex-col gap-3 border-t border-[#e3e3dc] pt-5 text-[10px] leading-5 text-[#858c82] dark:border-[#303a31] dark:text-[#98a197] sm:flex-row sm:items-center sm:justify-between">
+          <span>© {currentYear} SaralDocs</span>
+          <p className="max-w-2xl sm:text-right">
+            SaralDocs provides drafting assistance and general information, not legal advice. Review documents carefully and consult a qualified advocate when needed.
           </p>
         </div>
-
-        <div>
-          <h4 className="font-bold text-slate-900 dark:text-white mb-4">Quick Links</h4>
-          <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400 font-medium">
-            <li><a href="#features" className="hover:text-brand-indigo">Features</a></li>
-            <li><a href="#how-it-works" className="hover:text-brand-indigo">How It Works</a></li>
-            <li><a href="#templates" className="hover:text-brand-indigo">Templates</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="font-bold text-slate-900 dark:text-white mb-4">Popular Docs</h4>
-          <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400 font-medium">
-            <li>Rent Agreement 🏠</li>
-            <li>Freelance Contract 🤝</li>
-            <li>NDA Agreement 📄</li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="font-bold text-slate-900 dark:text-white mb-4">Connect</h4>
-          <div className="flex gap-4 text-slate-600 dark:text-slate-400">
-            <a href="#" className="p-2 bg-white dark:bg-slate-800 rounded-xl hover:text-brand-indigo"><Github className="w-5 h-5" /></a>
-            <a href="#" className="p-2 bg-white dark:bg-slate-800 rounded-xl hover:text-brand-indigo"><Twitter className="w-5 h-5" /></a>
-            <a href="#" className="p-2 bg-white dark:bg-slate-800 rounded-xl hover:text-brand-indigo"><Linkedin className="w-5 h-5" /></a>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 border-t border-slate-200 dark:border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-4 text-center">
-        <p>© 2026 saralDOCS. All rights reserved.</p>
-        <p className="max-w-md">Disclaimer: saralDOCS provides automated legal drafting guidance, not a substitute for formal legal advice from a licensed advocate.</p>
       </div>
     </footer>
   );
