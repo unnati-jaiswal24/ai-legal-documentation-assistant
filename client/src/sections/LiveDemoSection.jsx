@@ -6,7 +6,7 @@ import Reveal from '../components/Reveal';
 import SectionHeading from '../components/SectionHeading';
 
 const initialDetails = {
-  client: 'Aarav Mehta',
+  client: 'Client Name',
   freelancer: 'Your name',
   project: 'Brand identity and website design',
   fee: '₹48,000',
