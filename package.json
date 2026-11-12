@@ -1,0 +1,14 @@
+{
+  "name": "ai-legal-documentation-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Legal Drafting & Review Platform for India",
+  "scripts": {
+    "start": "node start-dev.js",
+    "dev": "node start-dev.js",
+    "client": "npm --prefix client run dev",
+    "server": "npm --prefix server run start",
+    "build": "npm --prefix client run build"
+  }
+}
+
