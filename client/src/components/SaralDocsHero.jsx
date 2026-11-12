@@ -1,22 +1,27 @@
 import { useRef } from 'react';
-import { ArrowDown, ArrowRight, Check, FileText } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowDown, ArrowRight, Check, FileText, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import FloatingLegalObject from './FloatingLegalObject';
 import { floatingLegalObjects } from './saralDocsHeroObjects';
+import useStartAgreement from '../hooks/useStartAgreement';
 
 function AgreementReveal({ progress }) {
   const reduceMotion = useReducedMotion();
   const opacity = useTransform(progress, [0.46, 0.64, 0.92], [0, 1, 1]);
   const y = useTransform(progress, [0.46, 0.66], [38, 0]);
   const scale = useTransform(progress, [0.46, 0.68], [0.9, 1]);
-  const pointerEvents = useTransform(progress, (value) => value > 0.64 ? 'auto' : 'none');
+  const pointerEvents = useTransform(progress, (value) => (value > 0.64 ? 'auto' : 'none'));
 
   return (
     <motion.div
       aria-hidden="true"
       data-agreement-reveal
-      style={{ opacity: reduceMotion ? 0 : opacity, y: reduceMotion ? 0 : y, scale: reduceMotion ? 1 : scale, pointerEvents: reduceMotion ? 'none' : pointerEvents }}
+      style={{
+        opacity: reduceMotion ? 0 : opacity,
+        y: reduceMotion ? 0 : y,
+        scale: reduceMotion ? 1 : scale,
+        pointerEvents: reduceMotion ? 'none' : pointerEvents,
+      }}
       className="absolute left-1/2 top-[59%] z-20 w-[min(82vw,410px)] -translate-x-1/2 -translate-y-1/2"
     >
       <div className="rounded-2xl border border-[#e4e3da] bg-[#fffefa]/95 p-4 shadow-[0_24px_70px_-35px_rgba(45,54,44,0.32)] backdrop-blur-sm dark:border-[#354037] dark:bg-[#1b231c]/95 sm:p-5">
@@ -76,6 +81,11 @@ export default function SaralDocsHero() {
   const scrollCueOpacity = useTransform(progress, [0, 0.1, 0.24], [1, 0.7, 0]);
   const trackHeight = reduceMotion ? '100svh' : '220svh';
 
+  const {
+    startAgreement,
+    loading,
+  } = useStartAgreement();
+
   return (
     <section
       ref={sectionRef}
@@ -117,12 +127,25 @@ export default function SaralDocsHero() {
             </motion.div>
 
             <motion.div style={{ opacity: reduceMotion ? 1 : ctaOpacity }} className="pointer-events-auto mt-7 sm:mt-9">
-              <Link
-                to="/signup"
-                className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-[#dfe3da] bg-white/85 px-5 py-2.5 text-xs font-semibold text-[#3d5941] shadow-[0_8px_30px_-20px_rgba(38,61,44,0.45)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c5d0c3] hover:bg-white hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#55775d] dark:border-[#39443a] dark:bg-[#1b231c]/90 dark:text-[#c6dbc4] dark:hover:bg-[#242d25]"
+              <button
+                type="button"
+                onClick={startAgreement}
+                disabled={loading}
+                aria-busy={loading}
+                className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-[#dfe3da] bg-white/90 px-5 py-2.5 text-xs font-semibold text-[#3d5941] shadow-[0_8px_30px_-20px_rgba(38,61,44,0.45)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c5d0c3] hover:bg-white hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#55775d] disabled:cursor-not-allowed disabled:opacity-60 dark:border-[#39443a] dark:bg-[#1b231c]/90 dark:text-[#c6dbc4] dark:hover:bg-[#242d25]"
               >
-                Start your agreement <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={14} />
-              </Link>
+                {loading ? (
+                  <>
+                    <Sparkles size={14} className="animate-spin text-[#456d4e]" />
+                    <span>Checking sign-in…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Start your agreement</span>
+                    <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={14} />
+                  </>
+                )}
+              </button>
             </motion.div>
           </div>
 

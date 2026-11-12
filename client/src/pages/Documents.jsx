@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ClipboardCheck, Download, FileText, MessageSquare, RefreshCw } from 'lucide-react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { ClipboardCheck, Download, FileText, MessageSquare, RefreshCw, Sparkles } from 'lucide-react';
 import { versions as fetchVersions } from '../api/drafts';
 import Card from '../components/Card';
 import LimitationsNotice from '../components/LimitationsNotice';
@@ -36,6 +36,8 @@ function formatDateTime(value) {
 
 export default function Documents() {
   const { id } = useParams();
+  const location = useLocation();
+  const report = location.state?.report;
   const [checked, setChecked] = useState({});
   const loadVersions = useCallback(() => fetchVersions(id).then(unwrapVersions), [id]);
   const { data: versions, loading, error, reload } = useAsyncData(loadVersions);
@@ -58,6 +60,33 @@ export default function Documents() {
         }
       />
       <LimitationsNotice />
+
+      {report && (
+        <Card className="mt-5 p-5 sm:p-7">
+          <div className="flex items-center gap-3 border-b border-[#ecece6] pb-4 dark:border-[#303a31]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eff3ed] text-[#58765b] dark:bg-[#29352b] dark:text-[#b4c8b1]">
+              <Sparkles size={17} />
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold text-[#354136] dark:text-[#e0e6df]">{report.title} — report summary</h2>
+              <p className="mt-1 text-[10px] text-[#858c82] dark:text-[#9ca69c]">AI-generated, non-binding information based on your saved answers</p>
+            </div>
+          </div>
+          <p className="mt-5 text-sm leading-6 text-[#596358] dark:text-[#c2cbc0]">{report.overview}</p>
+          {report.sections?.map((section, index) => (
+            <section key={`${section.heading}-${index}`} className="mt-5">
+              <h3 className="text-xs font-semibold text-[#354136] dark:text-[#e0e6df]">{section.heading}</h3>
+              <p className="mt-2 text-xs leading-5 text-[#747c73] dark:text-[#adb6ab]">{section.content}</p>
+            </section>
+          ))}
+          {report.redactedFieldCount > 0 && (
+            <p className="mt-5 rounded-lg bg-[#f7f8f4] p-3 text-[11px] leading-5 text-[#687267] dark:bg-[#202921] dark:text-[#b4bdb2]">
+              Common identifiers were masked in {report.redactedFieldCount} field{report.redactedFieldCount === 1 ? '' : 's'} before the AI request.
+            </p>
+          )}
+          <p className="mt-5 border-t border-[#ecece6] pt-4 text-[10px] leading-5 text-[#858c82] dark:border-[#303a31] dark:text-[#9ca69c]">{report.disclaimer}</p>
+        </Card>
+      )}
 
       <div className="mt-6 grid items-start gap-5 lg:grid-cols-[1fr_320px]">
         <Card className="overflow-hidden">

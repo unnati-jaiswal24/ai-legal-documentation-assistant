@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, FileText } from 'lucide-react';
 import { api } from '../api/client';
@@ -34,14 +34,18 @@ function TemplateCard({ template, onCreate, disabled }) {
 
 export default function NewDraft() {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const [creatingId, setCreatingId] = useState(null);
   const [createError, setCreateError] = useState('');
+  const autoStartHandled = useRef(false);
   const loadTemplates = useCallback(() => api.templates().then(unwrapTemplates), []);
   const { data: templatesList, loading, error, reload } = useAsyncData(loadTemplates);
-  const activeTemplates = (templatesList || []).filter((template) => template.isActive ?? template.is_active);
+  const activeTemplates = useMemo(
+    () => (templatesList || []).filter((template) => template.isActive ?? template.is_active),
+    [templatesList],
+  );
 
-  async function create(templateId) {
+  const create = useCallback(async (templateId) => {
     setCreatingId(templateId);
     setCreateError('');
     try {
@@ -54,7 +58,16 @@ export default function NewDraft() {
     } finally {
       setCreatingId(null);
     }
-  }
+  }, [pathname, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get('auto') === 'true' && activeTemplates.length > 0 && !autoStartHandled.current) {
+      autoStartHandled.current = true;
+      navigate(pathname, { replace: true });
+      create(activeTemplates[0].id);
+    }
+  }, [search, pathname, navigate, activeTemplates, create]);
 
   return (
     <div>

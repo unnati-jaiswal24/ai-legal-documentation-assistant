@@ -1,8 +1,8 @@
 import { useRef } from 'react';
-import { ArrowDown, ArrowRight, Check, FileText } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowDown, ArrowRight, Check, FileText, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import AgreementPreview from '../components/AgreementPreview';
+import useStartAgreement from '../hooks/useStartAgreement';
 
 const headline = ['Good work', 'deserves a', 'clear agreement.'];
 
@@ -26,6 +26,10 @@ const lineVariants = {
 export default function HeroSection() {
   const sectionRef = useRef(null);
   const reduceMotion = useReducedMotion();
+  const {
+    startAgreement,
+    loading,
+  } = useStartAgreement();
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start start', 'end start'],
@@ -104,12 +108,26 @@ export default function HeroSection() {
             }}
             className="mt-8 flex flex-col gap-3 sm:flex-row"
           >
-            <Link
-              to="/signup"
-              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#31583b] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-12px_rgba(49,88,59,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#284b32] hover:shadow-[0_14px_30px_-14px_rgba(49,88,59,0.65)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#31583b] dark:bg-[#779779] dark:text-[#101a12] dark:hover:bg-[#8eaa8f]"
+            <button
+              type="button"
+              onClick={startAgreement}
+              disabled={loading}
+              aria-busy={loading}
+              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#31583b] px-6 py-3 text-sm font-semibold text-white shadow-[0_8px_24px_-12px_rgba(49,88,59,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#284b32] hover:shadow-[0_14px_30px_-14px_rgba(49,88,59,0.65)] focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#31583b] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#779779] dark:text-[#101a12] dark:hover:bg-[#8eaa8f]"
             >
-              Start your agreement <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={16} />
-            </Link>
+              {loading ? (
+                <>
+                  <Sparkles size={16} className="animate-spin text-[#b4c8b1]" />
+                  <span>Starting agreement…</span>
+                </>
+              ) : (
+                <>
+                  <span>Start your agreement</span>
+                  <ArrowRight className="transition-transform duration-200 group-hover:translate-x-1" size={16} />
+                </>
+              )}
+            </button>
+
             <a
               href="#how-it-works"
               className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[#dcdfd7] bg-white/60 px-6 py-3 text-sm font-semibold text-[#465147] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c5d0c3] hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#55775d] dark:border-[#39443a] dark:bg-[#1b231c] dark:text-[#d4dbd2] dark:hover:bg-[#242d25]"

@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bot, FilePlus2, Files, FileText, FileStack, Clock3 } from 'lucide-react';
+import { ArrowRight, Bot, FilePlus2, Files, FileText, FileStack, Clock3, Sparkles } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Button from '../components/Button';
@@ -8,6 +8,8 @@ import Card from '../components/Card';
 import PageHeader from '../components/PageHeader';
 import StatusBadge from '../components/StatusBadge';
 import { EmptyState, ErrorState, LoadingState } from '../components/StatePanel';
+import AiStatusIndicator from '../components/ai/AiStatusIndicator';
+import AiChatbox from '../components/ai/AiChatbox';
 import useAsyncData from '../hooks/useAsyncData';
 
 const EMPTY_DRAFTS = [];
@@ -61,6 +63,7 @@ function DraftRow({ draft, activity = false }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [chatOpen, setChatOpen] = useState(false);
   const loadDrafts = useCallback(() => api.drafts().then(unwrapDrafts), []);
   const { data: drafts, loading, error, reload } = useAsyncData(loadDrafts);
   const items = drafts || EMPTY_DRAFTS;
@@ -89,10 +92,13 @@ export default function Dashboard() {
         title={name ? `Welcome back, ${name}.` : 'Welcome to your workspace.'}
         description={user?.email ? `${user.email} · Keep your freelance agreements moving, one clear step at a time.` : 'Keep your freelance agreements moving, one clear step at a time.'}
         actions={
-          <>
-            <Button as={Link} to="/assistant" variant="outline"><Bot size={15} /> Open AI assistant</Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <AiStatusIndicator />
+            <Button variant="outline" onClick={() => setChatOpen((prev) => !prev)}>
+              <Bot size={15} /> {chatOpen ? 'Close assistant' : 'AI drafting assistant'}
+            </Button>
             <Button as={Link} to="/documents/new"><FilePlus2 size={15} /> Create document</Button>
-          </>
+          </div>
         }
       />
 
@@ -169,16 +175,28 @@ export default function Dashboard() {
       </div>
 
       <section aria-label="Quick actions" className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Link to="/assistant" className="group flex items-center gap-4 rounded-2xl border border-[#e6e7df] bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-[#cbd7c9] hover:shadow-sm dark:border-[#303a31] dark:bg-[#181f19] dark:hover:border-[#4a5b4b]">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0edf5] text-[#77698e] dark:bg-[#302a3a] dark:text-[#c7badb]"><Bot size={18} /></span>
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className="group flex items-center gap-4 rounded-2xl border border-[#e6e7df] bg-white p-5 text-left transition-all hover:-translate-y-0.5 hover:border-[#cbd7c9] hover:shadow-sm dark:border-[#303a31] dark:bg-[#181f19] dark:hover:border-[#4a5b4b]"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#edf5ee] text-[#31583b] dark:bg-[#253627] dark:text-[#a8dcae]">
+            <Sparkles size={18} />
+          </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-[#354136] dark:text-[#e0e6df]">AI Assistant</span>
-            <span className="mt-1 block text-xs text-[#747c73] dark:text-[#adb6ab]">Open the assistant availability and connection status.</span>
+            <span className="flex items-center gap-2 text-sm font-semibold text-[#354136] dark:text-[#e0e6df]">
+              AI Drafting Assistant
+              <AiStatusIndicator />
+            </span>
+            <span className="mt-1 block text-xs text-[#747c73] dark:text-[#adb6ab]">
+              Interactive contract intake with guided checklist and clause reasoning.
+            </span>
           </span>
           <ArrowRight size={15} className="text-[#8b9389] transition-transform group-hover:translate-x-1" />
-        </Link>
+        </button>
+
         <Link to="/templates" className="group flex items-center gap-4 rounded-2xl border border-[#e6e7df] bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-[#cbd7c9] hover:shadow-sm dark:border-[#303a31] dark:bg-[#181f19] dark:hover:border-[#4a5b4b]">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff3ed] text-[#58765b] dark:bg-[#29352b] dark:text-[#b4c8b1]"><FileStack size={18} /></span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff3ed] text-[#58765b] dark:bg-[#29352b] dark:text-[#b4c8b1]"><FileStack size={18} /></span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold text-[#354136] dark:text-[#e0e6df]">Browse templates</span>
             <span className="mt-1 block text-xs text-[#747c73] dark:text-[#adb6ab]">Choose a template supplied by the platform.</span>
@@ -186,6 +204,27 @@ export default function Dashboard() {
           <ArrowRight size={15} className="text-[#8b9389] transition-transform group-hover:translate-x-1" />
         </Link>
       </section>
+
+      {/* Docked AI Chatbox Panel */}
+      <AiChatbox
+        isDocked
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        title="SaralDocs Drafting Assistant"
+      />
+
+      {/* Floating Trigger Button when chat is closed */}
+      {!chatOpen && (
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-[#31583b] px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#284b32] focus-visible:outline-[#31583b] dark:bg-[#779779] dark:text-[#101a12]"
+          aria-label="Open AI drafting assistant chatbox"
+        >
+          <Sparkles size={15} />
+          <span>Ask AI Assistant</span>
+        </button>
+      )}
     </div>
   );
 }
