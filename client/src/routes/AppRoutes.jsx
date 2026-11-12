@@ -64,6 +64,7 @@ export default function AppRoutes() {
               <Route path="drafts" element={<Drafts />} />
               <Route path="drafts/new" element={<NewDraft />} />
               <Route path="drafts/:id/fill" element={<FillQuestions />} />
+              <Route path="drafts/:id/intake" element={<FillQuestions />} />
               <Route path="drafts/:id/review" element={<Review />} />
               <Route path="drafts/:id/preview" element={<Preview />} />
               <Route path="drafts/:id/documents" element={<Documents />} />
