@@ -23,7 +23,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await login(values);
-      navigate(location.state?.from || '/dashboard', { replace: true });
+      navigate(location.state?.from || '/dashboard/client', { replace: true });
     } catch (requestError) {
       setError(requestError.message || 'We could not sign you in. Check your details and try again.');
     } finally {

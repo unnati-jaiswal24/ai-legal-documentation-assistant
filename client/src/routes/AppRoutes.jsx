@@ -1,5 +1,5 @@
 import { lazy, Suspense, useLayoutEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import DashboardLayout from '../layouts/DashboardLayout';
 import PublicLayout from '../layouts/PublicLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -25,19 +25,24 @@ const Consultations = lazy(() => import('../pages/Consultations'));
 const Profile = lazy(() => import('../pages/Profile'));
 const Limitations = lazy(() => import('../pages/Limitations'));
 const NotFound = lazy(() => import('../pages/NotFound'));
+const RoleDashboardLayout = lazy(() => import('../components/dashboard/DashboardLayout'));
+const RoleDashboardHome = lazy(() => import('../pages/dashboard/RoleDashboardHome'));
+const DashboardSection = lazy(() => import('../pages/dashboard/DashboardSection'));
 
 function PageFallback() {
   return <main className="workspace-main"><div className="workspace-content"><LoadingState label="Opening page…" /></div></main>;
 }
 
 export default function AppRoutes() {
+  const location = useLocation();
+
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   return (
     <>
-      <SaralDocsHero />
+      {!location.pathname.startsWith('/dashboard/') && <SaralDocsHero />}
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route element={<PublicLayout />}>
@@ -73,6 +78,11 @@ export default function AppRoutes() {
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
             </Route>
+          </Route>
+
+          <Route path="dashboard/:role" element={<RoleDashboardLayout />}>
+            <Route index element={<RoleDashboardHome />} />
+            <Route path=":section" element={<DashboardSection />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />
