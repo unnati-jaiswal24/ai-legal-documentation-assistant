@@ -48,6 +48,7 @@ enum DocumentStatus {
   validated
   generated
   exported
+  in_review
   archived
 
   @@map("document_status")
@@ -115,26 +116,50 @@ enum ConsultationStatus {
   @@map("consultation_status")
 }
 
+enum StudentVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("student_verification_status")
+}
+
+enum ReviewRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+
+  @@map("review_request_status")
+}
+
 model User {
-  id                       String            @id @default(uuid()) @db.Uuid
-  fullName                 String            @map("full_name") @db.VarChar(160)
-  email                    String            @unique @db.VarChar(254)
-  passwordHash             String            @map("password_hash") @db.VarChar(255)
-  preferredLanguage        String            @default("en") @map("preferred_language") @db.VarChar(16)
-  isActive                 Boolean           @default(true) @map("is_active")
-  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                       String                @id @default(uuid()) @db.Uuid
+  fullName                 String                @map("full_name") @db.VarChar(160)
+  email                    String                @unique @db.VarChar(254)
+  passwordHash             String                @map("password_hash") @db.VarChar(255)
+  preferredLanguage        String                @default("en") @map("preferred_language") @db.VarChar(16)
+  isActive                 Boolean               @default(true) @map("is_active")
+  createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
   roleAssignments          UserRole[]
   authSessions             AuthSession[]
-  ownedDocuments           Document[]        @relation("DocumentOwner")
-  createdVersions          DocumentVersion[] @relation("VersionCreator")
-  createdReviews           AiReview[]        @relation("ReviewCreator")
+  ownedDocuments           Document[]            @relation("DocumentOwner")
+  createdVersions          DocumentVersion[]     @relation("VersionCreator")
+  createdReviews           AiReview[]            @relation("ReviewCreator")
   comments                 ReviewComment[]
   consultations            Consultation[]
   auditLogs                AuditLog[]
-  reviewedTemplateVersions TemplateVersion[] @relation("TemplateReviewer")
-  reviewedClauseVersions   ClauseVersion[]   @relation("ClauseReviewer")
-  verifiedLegalSources     LegalSource[]     @relation("SourceVerifier")
+  reviewedTemplateVersions TemplateVersion[]     @relation("TemplateReviewer")
+  reviewedClauseVersions   ClauseVersion[]       @relation("ClauseReviewer")
+  verifiedLegalSources     LegalSource[]         @relation("SourceVerifier")
+  clientProfile            ClientProfile?
+  studentProfile           LawStudentProfile?
+  notifications            Notification[]
+  reviewRequests           ReviewRequest[]       @relation("ReviewRequestClient")
+  verificationDecisions    StudentVerification[] @relation("VerificationDecider")
 
   @@index([isActive])
   @@map("users")
@@ -172,6 +197,96 @@ model AuthSession {
 
   @@index([userId, expiresAt])
   @@map("auth_sessions")
+}
+
+model ClientProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  companyName String?  @map("company_name") @db.VarChar(180)
+  phoneNumber String?  @map("phone_number") @db.VarChar(32)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("client_profiles")
+}
+
+model University {
+  id              String              @id @default(uuid()) @db.Uuid
+  name            String              @db.VarChar(180)
+  city            String              @db.VarChar(100)
+  state           String              @db.VarChar(100)
+  countryCode     String              @default("IN") @map("country_code") @db.Char(2)
+  studentProfiles LawStudentProfile[]
+
+  @@unique([name, city, state])
+  @@index([state, city])
+  @@map("universities")
+}
+
+model LawStudentProfile {
+  id               String                @id @default(uuid()) @db.Uuid
+  userId           String                @unique @map("user_id") @db.Uuid
+  universityId     String                @map("university_id") @db.Uuid
+  phoneNumber      String                @map("phone_number") @db.VarChar(32)
+  degree           String                @db.VarChar(100)
+  currentYear      Int                   @map("current_year")
+  graduationYear   Int                   @map("graduation_year")
+  enrollmentNumber String                @map("enrollment_number") @db.VarChar(100)
+  bio              String?               @db.VarChar(1200)
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  university       University            @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  expertise        StudentExpertise[]
+  verifications    StudentVerification[]
+  reviewRequests   ReviewRequest[]
+
+  @@unique([universityId, enrollmentNumber])
+  @@index([universityId])
+  @@index([graduationYear])
+  @@map("law_student_profiles")
+}
+
+model ExpertiseArea {
+  id       String             @id @default(uuid()) @db.Uuid
+  code     String             @unique @db.VarChar(80)
+  name     String             @unique @db.VarChar(120)
+  students StudentExpertise[]
+
+  @@map("expertise_areas")
+}
+
+model StudentExpertise {
+  studentProfileId String            @map("student_profile_id") @db.Uuid
+  expertiseAreaId  String            @map("expertise_area_id") @db.Uuid
+  studentProfile   LawStudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  expertiseArea    ExpertiseArea     @relation(fields: [expertiseAreaId], references: [id], onDelete: Restrict)
+
+  @@id([studentProfileId, expertiseAreaId])
+  @@index([expertiseAreaId])
+  @@map("student_expertise")
+}
+
+model StudentVerification {
+  id               String                    @id @default(uuid()) @db.Uuid
+  studentProfileId String                    @map("student_profile_id") @db.Uuid
+  storageKey       String                    @unique @map("storage_key") @db.VarChar(255)
+  originalFileName String                    @map("original_file_name") @db.VarChar(255)
+  mimeType         String                    @map("mime_type") @db.VarChar(80)
+  sizeBytes        Int                       @map("size_bytes")
+  status           StudentVerificationStatus @default(PENDING)
+  isCurrent        Boolean                   @default(true) @map("is_current")
+  submittedAt      DateTime                  @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  decidedAt        DateTime?                 @map("decided_at") @db.Timestamptz(6)
+  decidedByUserId  String?                   @map("decided_by_user_id") @db.Uuid
+  rejectionReason  String?                   @map("rejection_reason") @db.VarChar(1000)
+  studentProfile   LawStudentProfile         @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  decidedByUser    User?                     @relation("VerificationDecider", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, submittedAt])
+  @@index([studentProfileId, submittedAt])
+  @@map("student_verifications")
 }
 
 model DocumentType {
@@ -229,11 +344,25 @@ model TemplateField {
   templateVersion   TemplateVersion         @relation(fields: [templateVersionId], references: [id], onDelete: Cascade)
   documentValues    DocumentFieldValue[]
   conditionLinks    TemplateVersionClause[] @relation("ClauseConditionField")
+  options           TemplateFieldOption[]
 
   @@unique([templateVersionId, fieldKey])
   @@unique([templateVersionId, displayOrder])
   @@index([templateVersionId, id])
   @@map("template_fields")
+}
+
+model TemplateFieldOption {
+  id              String        @id @default(uuid()) @db.Uuid
+  templateFieldId String        @map("template_field_id") @db.Uuid
+  value           String        @db.VarChar(240)
+  label           String        @db.VarChar(240)
+  displayOrder    Int           @map("display_order")
+  templateField   TemplateField @relation(fields: [templateFieldId], references: [id], onDelete: Cascade)
+
+  @@unique([templateFieldId, value])
+  @@unique([templateFieldId, displayOrder])
+  @@map("template_field_options")
 }
 
 model Clause {
@@ -249,6 +378,7 @@ model ClauseVersion {
   id             String                  @id @default(uuid()) @db.Uuid
   clauseId       String                  @map("clause_id") @db.Uuid
   versionLabel   String                  @map("version_label") @db.VarChar(40)
+  title          String                  @db.VarChar(200)
   legalText      String                  @map("legal_text") @db.Text
   plainText      String                  @map("plain_text") @db.Text
   status         ClauseStatus            @default(draft)
@@ -326,6 +456,7 @@ model Document {
   fieldValues       DocumentFieldValue[]
   versions          DocumentVersion[]
   consultations     Consultation[]
+  reviewRequests    ReviewRequest[]
 
   @@index([ownerUserId, status, updatedAt])
   @@index([templateVersionId])
@@ -359,8 +490,10 @@ model DocumentVersion {
   creator         User?                 @relation("VersionCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   aiReviews       AiReview[]
   comments        ReviewComment[]
+  reviewRequests  ReviewRequest[]
 
   @@unique([documentId, versionNo])
+  @@unique([id, documentId])
   @@index([documentId, createdAt])
   @@map("document_versions")
 }
@@ -408,13 +541,16 @@ model ReviewComment {
   id                String          @id @default(uuid()) @db.Uuid
   documentVersionId String          @map("document_version_id") @db.Uuid
   authorUserId      String          @map("author_user_id") @db.Uuid
+  reviewId          String?         @map("review_id") @db.Uuid
   body              String          @db.Text
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
   author            User            @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  review            Review?         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
   @@index([documentVersionId, createdAt])
+  @@index([reviewId, createdAt])
   @@map("review_comments")
 }
 
@@ -448,6 +584,69 @@ model Consultation {
   @@index([documentId])
   @@index([expertId, status])
   @@map("consultations")
+}
+
+model ReviewRequest {
+  id                    String              @id @default(uuid()) @db.Uuid
+  clientUserId          String              @map("client_user_id") @db.Uuid
+  documentId            String              @map("document_id") @db.Uuid
+  studentProfileId      String              @map("student_profile_id") @db.Uuid
+  message               String              @db.VarChar(3000)
+  requestedCompletionAt DateTime?           @map("requested_completion_at") @db.Timestamptz(6)
+  status                ReviewRequestStatus @default(PENDING)
+  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  acceptedAt            DateTime?           @map("accepted_at") @db.Timestamptz(6)
+  completedAt           DateTime?           @map("completed_at") @db.Timestamptz(6)
+  client                User                @relation("ReviewRequestClient", fields: [clientUserId], references: [id], onDelete: Cascade)
+  document              Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersion       DocumentVersion     @relation(fields: [documentVersionId, documentId], references: [id, documentId], onDelete: Cascade)
+  documentVersionId     String              @map("document_version_id") @db.Uuid
+  studentProfile        LawStudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  review                Review?
+
+  @@index([clientUserId, status, createdAt])
+  @@index([studentProfileId, status, createdAt])
+  @@index([documentId])
+  @@map("review_requests")
+}
+
+model Review {
+  id              String          @id @default(uuid()) @db.Uuid
+  reviewRequestId String          @unique @map("review_request_id") @db.Uuid
+  summary         String          @db.Text
+  submittedAt     DateTime        @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  reviewRequest   ReviewRequest   @relation(fields: [reviewRequestId], references: [id], onDelete: Cascade)
+  comments        ReviewComment[]
+  rating          ReviewRating?
+
+  @@index([submittedAt])
+  @@map("reviews")
+}
+
+model ReviewRating {
+  id        String   @id @default(uuid()) @db.Uuid
+  reviewId  String   @unique @map("review_id") @db.Uuid
+  stars     Int
+  comment   String?  @db.VarChar(1000)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_ratings")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  kind      String    @db.VarChar(80)
+  title     String    @db.VarChar(180)
+  body      String    @db.VarChar(1000)
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
 }
 
 model AuditLog {

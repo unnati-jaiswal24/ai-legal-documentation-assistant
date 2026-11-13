@@ -1,7 +1,17 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
+import { aiDocumentReviewController } from "../controllers/aiDocumentReviewController.js";
+import { authenticateUser } from "../middleware/authMiddleware.js";
+import { authorizeRole } from "../middleware/roleMiddleware.js";
 import { explainQuestionnaireFields } from "../services/aiService.js";
 import { generateDraftReport, reportInputSchema } from "../services/reportService.js";
+import { validateRequest } from "../validators/common.js";
+import {
+  aiReviewConsentSchema,
+  aiReviewDocumentParamsSchema,
+  aiReviewParamsSchema,
+} from "../validators/aiReviewValidators.js";
 
 const requestSchema = z.object({
   fieldKeys: z.array(z.string()).min(1).max(10),
@@ -46,6 +56,29 @@ export function createAiRouter({
   const router = Router();
   const requestCounts = new Map();
   const reportRequestCounts = new Map();
+  const documentReviewLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 5,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: { error: "Too many document reviews. Try again later.", code: "rate_limited" },
+  });
+
+  router.post(
+    "/documents/:documentId/versions/:versionId/review",
+    authenticateUser,
+    authorizeRole("CLIENT"),
+    validateRequest({ params: aiReviewParamsSchema, body: aiReviewConsentSchema }),
+    documentReviewLimiter,
+    aiDocumentReviewController.create,
+  );
+  router.get(
+    "/documents/:documentId/reviews",
+    authenticateUser,
+    authorizeRole("CLIENT"),
+    validateRequest({ params: aiReviewDocumentParamsSchema }),
+    aiDocumentReviewController.list,
+  );
 
   router.post("/report-content", async (req, res) => {
     if (!reportsEnabled) {

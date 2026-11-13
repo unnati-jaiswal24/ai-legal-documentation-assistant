@@ -11,7 +11,8 @@
     "db:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:bootstrap-admin": "node scripts/bootstrapAdmin.js"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +29,7 @@
     "express-rate-limit": "^8.7.4",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0",
     "pg": "^8.23.1",
     "zod": "^4.6.7"
   },

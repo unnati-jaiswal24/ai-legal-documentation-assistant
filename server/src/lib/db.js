@@ -1,29 +1,13 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import "dotenv/config";
 
-export const prisma = new PrismaClient();
+if (!process.env.DATABASE_URL) throw new Error("Missing required backend environment variable: DATABASE_URL.");
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+export const prisma = new PrismaClient({ adapter });
 
-/**
- * Runs `fn` inside a transaction with app.user_id set, so Postgres
- * row-level security only exposes this user's drafts, answers,
- * document versions and consultations.
- *
- * Usage in a route:
- *   const draft = await withUser(req.user.id, (tx) =>
- *     tx.draft.findUnique({ where: { id }, include: { values: true } })
- *   );
- *
- * Requires DATABASE_URL to use a NON-owner role (app_user), otherwise RLS is bypassed.
- * While developing as the owner, also filter by userId in your queries.
- */
-export async function withUser(userId, fn) {
-  return prisma.$transaction(async (tx) => {
-    // third argument true = local to this transaction only
-    await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
-    return fn(tx);
+export async function audit(tx, userId, action, entityType, entityId) {
+  await tx.auditLog.create({
+    data: { userId, action, entityType, entityId },
   });
-}
-
-/** Append-only audit helper. Call it from every service. */
-export async function audit(tx, userId, action, entity) {
-  await tx.auditLog.create({ data: { userId, action, entity } });
 }
