@@ -23,7 +23,7 @@ export default function Signup() {
     setSubmitting(true);
     try {
       await signup(values);
-      navigate(location.state?.from || '/dashboard', { replace: true });
+      navigate(location.state?.from || '/dashboard/client', { replace: true });
     } catch (requestError) {
       setError(requestError.message || 'We could not create your account. Please try again.');
     } finally {

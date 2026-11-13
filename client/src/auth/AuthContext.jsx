@@ -3,12 +3,30 @@ import * as auth from '../api/auth';
 
 const AuthContext = createContext(null);
 
+function getStoredMockUser() {
+  if (localStorage.getItem('token') !== 'mock-token') return null;
+
+  try {
+    const user = JSON.parse(localStorage.getItem('mock-user') || 'null');
+    if (user) return user;
+  } catch {
+    localStorage.removeItem('mock-user');
+  }
+
+  localStorage.removeItem('token');
+  return null;
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem('token')));
+  const [user, setUser] = useState(getStoredMockUser);
+  const [loading, setLoading] = useState(() => {
+    const token = localStorage.getItem('token');
+    return Boolean(token && token !== 'mock-token');
+  });
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) return;
+    const token = localStorage.getItem('token');
+    if (!token || token === 'mock-token') return;
 
     let active = true;
     auth.me()

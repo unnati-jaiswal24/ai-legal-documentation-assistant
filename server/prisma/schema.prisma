@@ -1,0 +1,465 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TemplateStatus {
+  draft
+  in_review
+  approved
+  retired
+
+  @@map("template_status")
+}
+
+enum ClauseStatus {
+  draft
+  in_review
+  approved
+  retired
+
+  @@map("clause_status")
+}
+
+enum FieldDataType {
+  text
+  number
+  date
+  boolean
+  select
+  email
+  phone
+
+  @@map("field_data_type")
+}
+
+enum ClauseConditionOperator {
+  equals
+  not_equals
+
+  @@map("clause_condition_operator")
+}
+
+enum DocumentStatus {
+  in_progress
+  validated
+  generated
+  exported
+  archived
+
+  @@map("document_status")
+}
+
+enum DocumentVersionSource {
+  generated
+  upload
+
+  @@map("document_version_source")
+}
+
+enum DocumentFormat {
+  pdf
+  docx
+  txt
+
+  @@map("document_format")
+}
+
+enum AiReviewType {
+  questionnaire_report
+  document_review
+  clause_explanation
+
+  @@map("ai_review_type")
+}
+
+enum AiReviewStatus {
+  queued
+  processing
+  completed
+  failed
+
+  @@map("ai_review_status")
+}
+
+enum ReviewFindingKind {
+  risk
+  suggestion
+  missing_term
+  inconsistency
+  explanation
+  summary_section
+
+  @@map("review_finding_kind")
+}
+
+enum ReviewSeverity {
+  info
+  low
+  medium
+  high
+  critical
+
+  @@map("review_severity")
+}
+
+enum ConsultationStatus {
+  requested
+  assigned
+  answered
+  closed
+
+  @@map("consultation_status")
+}
+
+model User {
+  id                       String            @id @default(uuid()) @db.Uuid
+  fullName                 String            @map("full_name") @db.VarChar(160)
+  email                    String            @unique @db.VarChar(254)
+  passwordHash             String            @map("password_hash") @db.VarChar(255)
+  preferredLanguage        String            @default("en") @map("preferred_language") @db.VarChar(16)
+  isActive                 Boolean           @default(true) @map("is_active")
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  roleAssignments          UserRole[]
+  authSessions             AuthSession[]
+  ownedDocuments           Document[]        @relation("DocumentOwner")
+  createdVersions          DocumentVersion[] @relation("VersionCreator")
+  createdReviews           AiReview[]        @relation("ReviewCreator")
+  comments                 ReviewComment[]
+  consultations            Consultation[]
+  auditLogs                AuditLog[]
+  reviewedTemplateVersions TemplateVersion[] @relation("TemplateReviewer")
+  reviewedClauseVersions   ClauseVersion[]   @relation("ClauseReviewer")
+  verifiedLegalSources     LegalSource[]     @relation("SourceVerifier")
+
+  @@index([isActive])
+  @@map("users")
+}
+
+model Role {
+  id          String     @id @default(uuid()) @db.Uuid
+  code        String     @unique @db.VarChar(40)
+  name        String     @unique @db.VarChar(80)
+  description String?    @db.VarChar(240)
+  assignments UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId     String   @map("user_id") @db.Uuid
+  roleId     String   @map("role_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model AuthSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
+}
+
+model DocumentType {
+  id          String     @id @default(uuid()) @db.Uuid
+  code        String     @unique @db.VarChar(60)
+  name        String     @unique @db.VarChar(120)
+  description String?    @db.VarChar(500)
+  templates   Template[]
+
+  @@map("document_types")
+}
+
+model Template {
+  id             String            @id @default(uuid()) @db.Uuid
+  documentTypeId String            @map("document_type_id") @db.Uuid
+  code           String            @unique @db.VarChar(80)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  documentType   DocumentType      @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
+  versions       TemplateVersion[]
+
+  @@index([documentTypeId])
+  @@map("templates")
+}
+
+model TemplateVersion {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  templateId         String                  @map("template_id") @db.Uuid
+  versionLabel       String                  @map("version_label") @db.VarChar(40)
+  title              String                  @db.VarChar(160)
+  stateApplicability String?                 @map("state_applicability") @db.VarChar(80)
+  status             TemplateStatus          @default(draft)
+  changelog          String?                 @db.Text
+  reviewerUserId     String?                 @map("reviewer_user_id") @db.Uuid
+  approvedAt         DateTime?               @map("approved_at") @db.Timestamptz(6)
+  createdAt          DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  template           Template                @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  reviewer           User?                   @relation("TemplateReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+  fields             TemplateField[]
+  clauseLinks        TemplateVersionClause[]
+  documents          Document[]
+
+  @@unique([templateId, versionLabel])
+  @@index([status, templateId])
+  @@map("template_versions")
+}
+
+model TemplateField {
+  id                String                  @id @default(uuid()) @db.Uuid
+  templateVersionId String                  @map("template_version_id") @db.Uuid
+  fieldKey          String                  @map("field_key") @db.VarChar(80)
+  labelPlain        String                  @map("label_plain") @db.VarChar(240)
+  dataType          FieldDataType           @map("data_type")
+  isRequired        Boolean                 @default(true) @map("is_required")
+  displayOrder      Int                     @map("display_order")
+  templateVersion   TemplateVersion         @relation(fields: [templateVersionId], references: [id], onDelete: Cascade)
+  documentValues    DocumentFieldValue[]
+  conditionLinks    TemplateVersionClause[] @relation("ClauseConditionField")
+
+  @@unique([templateVersionId, fieldKey])
+  @@unique([templateVersionId, displayOrder])
+  @@index([templateVersionId, id])
+  @@map("template_fields")
+}
+
+model Clause {
+  id        String          @id @default(uuid()) @db.Uuid
+  code      String          @unique @db.VarChar(80)
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  versions  ClauseVersion[]
+
+  @@map("clauses")
+}
+
+model ClauseVersion {
+  id             String                  @id @default(uuid()) @db.Uuid
+  clauseId       String                  @map("clause_id") @db.Uuid
+  versionLabel   String                  @map("version_label") @db.VarChar(40)
+  legalText      String                  @map("legal_text") @db.Text
+  plainText      String                  @map("plain_text") @db.Text
+  status         ClauseStatus            @default(draft)
+  reviewerUserId String?                 @map("reviewer_user_id") @db.Uuid
+  approvedAt     DateTime?               @map("approved_at") @db.Timestamptz(6)
+  createdAt      DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  clause         Clause                  @relation(fields: [clauseId], references: [id], onDelete: Restrict)
+  reviewer       User?                   @relation("ClauseReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+  templateLinks  TemplateVersionClause[]
+  sourceLinks    ClauseVersionSource[]
+
+  @@unique([clauseId, versionLabel])
+  @@index([status, clauseId])
+  @@map("clause_versions")
+}
+
+model TemplateVersionClause {
+  templateVersionId String                   @map("template_version_id") @db.Uuid
+  clauseVersionId   String                   @map("clause_version_id") @db.Uuid
+  position          Int
+  isRequired        Boolean                  @default(true) @map("is_required")
+  conditionFieldId  String?                  @map("condition_field_id") @db.Uuid
+  conditionOperator ClauseConditionOperator? @map("condition_operator")
+  conditionValue    String?                  @map("condition_value") @db.VarChar(500)
+  templateVersion   TemplateVersion          @relation(fields: [templateVersionId], references: [id], onDelete: Cascade)
+  clauseVersion     ClauseVersion            @relation(fields: [clauseVersionId], references: [id], onDelete: Restrict)
+  conditionField    TemplateField?           @relation("ClauseConditionField", fields: [conditionFieldId], references: [id], onDelete: Restrict)
+
+  @@id([templateVersionId, clauseVersionId])
+  @@unique([templateVersionId, position])
+  @@index([conditionFieldId])
+  @@map("template_version_clauses")
+}
+
+model LegalSource {
+  id               String                @id @default(uuid()) @db.Uuid
+  citationKey      String                @unique @map("citation_key") @db.VarChar(180)
+  actName          String                @map("act_name") @db.VarChar(200)
+  section          String                @db.VarChar(100)
+  sourceUrl        String                @map("source_url") @db.VarChar(2048)
+  excerpt          String                @db.Text
+  verifiedAt       DateTime?             @map("verified_at") @db.Timestamptz(6)
+  verifiedByUserId String?               @map("verified_by_user_id") @db.Uuid
+  verifier         User?                 @relation("SourceVerifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+  clauseLinks      ClauseVersionSource[]
+  reviewFindings   ReviewFinding[]
+
+  @@index([actName, section])
+  @@map("legal_sources")
+}
+
+model ClauseVersionSource {
+  clauseVersionId String        @map("clause_version_id") @db.Uuid
+  legalSourceId   String        @map("legal_source_id") @db.Uuid
+  citationNote    String?       @map("citation_note") @db.VarChar(500)
+  clauseVersion   ClauseVersion @relation(fields: [clauseVersionId], references: [id], onDelete: Cascade)
+  legalSource     LegalSource   @relation(fields: [legalSourceId], references: [id], onDelete: Restrict)
+
+  @@id([clauseVersionId, legalSourceId])
+  @@index([legalSourceId])
+  @@map("clause_version_sources")
+}
+
+model Document {
+  id                String               @id @default(uuid()) @db.Uuid
+  ownerUserId       String               @map("owner_user_id") @db.Uuid
+  templateVersionId String?              @map("template_version_id") @db.Uuid
+  title             String               @db.VarChar(200)
+  status            DocumentStatus       @default(in_progress)
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?            @map("deleted_at") @db.Timestamptz(6)
+  owner             User                 @relation("DocumentOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  templateVersion   TemplateVersion?     @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  fieldValues       DocumentFieldValue[]
+  versions          DocumentVersion[]
+  consultations     Consultation[]
+
+  @@index([ownerUserId, status, updatedAt])
+  @@index([templateVersionId])
+  @@map("documents")
+}
+
+model DocumentFieldValue {
+  documentId      String        @map("document_id") @db.Uuid
+  templateFieldId String        @map("template_field_id") @db.Uuid
+  valueText       String        @map("value_text") @db.Text
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  document        Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  templateField   TemplateField @relation(fields: [templateFieldId], references: [id], onDelete: Restrict)
+
+  @@id([documentId, templateFieldId])
+  @@index([templateFieldId])
+  @@map("document_field_values")
+}
+
+model DocumentVersion {
+  id              String                @id @default(uuid()) @db.Uuid
+  documentId      String                @map("document_id") @db.Uuid
+  versionNo       Int                   @map("version_no")
+  sourceKind      DocumentVersionSource @map("source_kind")
+  format          DocumentFormat
+  contentText     String?               @map("content_text") @db.Text
+  storageKey      String?               @map("storage_key") @db.VarChar(1024)
+  createdByUserId String?               @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  document        Document              @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  creator         User?                 @relation("VersionCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  aiReviews       AiReview[]
+  comments        ReviewComment[]
+
+  @@unique([documentId, versionNo])
+  @@index([documentId, createdAt])
+  @@map("document_versions")
+}
+
+model AiReview {
+  id                String          @id @default(uuid()) @db.Uuid
+  documentVersionId String          @map("document_version_id") @db.Uuid
+  reviewType        AiReviewType    @map("review_type")
+  provider          String          @db.VarChar(80)
+  model             String          @db.VarChar(120)
+  promptVersion     String?         @map("prompt_version") @db.VarChar(80)
+  status            AiReviewStatus  @default(queued)
+  summary           String?         @db.Text
+  errorCode         String?         @map("error_code") @db.VarChar(80)
+  createdByUserId   String?         @map("created_by_user_id") @db.Uuid
+  startedAt         DateTime        @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt       DateTime?       @map("completed_at") @db.Timestamptz(6)
+  documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+  creator           User?           @relation("ReviewCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  findings          ReviewFinding[]
+
+  @@index([documentVersionId, startedAt])
+  @@map("ai_reviews")
+}
+
+model ReviewFinding {
+  id            String            @id @default(uuid()) @db.Uuid
+  aiReviewId    String            @map("ai_review_id") @db.Uuid
+  kind          ReviewFindingKind
+  severity      ReviewSeverity    @default(info)
+  title         String            @db.VarChar(200)
+  explanation   String            @db.Text
+  suggestion    String?           @db.Text
+  legalSourceId String?           @map("legal_source_id") @db.Uuid
+  displayOrder  Int               @map("display_order")
+  aiReview      AiReview          @relation(fields: [aiReviewId], references: [id], onDelete: Cascade)
+  legalSource   LegalSource?      @relation(fields: [legalSourceId], references: [id], onDelete: SetNull)
+
+  @@unique([aiReviewId, displayOrder])
+  @@index([legalSourceId])
+  @@map("review_findings")
+}
+
+model ReviewComment {
+  id                String          @id @default(uuid()) @db.Uuid
+  documentVersionId String          @map("document_version_id") @db.Uuid
+  authorUserId      String          @map("author_user_id") @db.Uuid
+  body              String          @db.Text
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+  author            User            @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([documentVersionId, createdAt])
+  @@map("review_comments")
+}
+
+model Expert {
+  id             String         @id @default(uuid()) @db.Uuid
+  name           String         @db.VarChar(160)
+  barCouncilId   String?        @unique @map("bar_council_id") @db.VarChar(80)
+  specialization String         @db.VarChar(200)
+  isAvailable    Boolean        @default(true) @map("is_available")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  consultations  Consultation[]
+
+  @@index([isAvailable])
+  @@map("experts")
+}
+
+model Consultation {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @map("user_id") @db.Uuid
+  documentId String             @map("document_id") @db.Uuid
+  expertId   String?            @map("expert_id") @db.Uuid
+  query      String             @db.Text
+  status     ConsultationStatus @default(requested)
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  expert     Expert?            @relation(fields: [expertId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, createdAt])
+  @@index([documentId])
+  @@index([expertId, status])
+  @@map("consultations")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  entityType String   @map("entity_type") @db.VarChar(80)
+  entityId   String   @map("entity_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
